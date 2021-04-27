@@ -1,0 +1,80 @@
+kibana:
+  enabled: true
+  imagePullPolicy: "IfNotPresent"
+  elasticsearchAccount:
+    secret: "elasticsearch-account"
+  ingress:
+    enabled: true
+    path: /
+    hosts:
+      - <kibna_url>
+    tls: []
+    - secretName: kibana-tls-secret
+      hosts:
+        -  kibana.apps.ata.test.olibre.io 
+  config:
+    server.name: kibana
+    server.host: "0"
+    elasticsearch.hosts: http://<opendistro-client>:<opendistro-client-port>
+    elasticsearch.requestTimeout: 360000
+    logging.verbose: false
+    server.ssl.enabled: false
+    # Secure Cookies can be set if kibana SSL is enabled
+    opendistro_security.cookie.secure: false
+    elasticsearch.username: ${ELASTICSEARCH_USERNAME}
+    elasticsearch.password: ${ELASTICSEARCH_PASSWORD}
+    # Enable multitenancy
+    opendistro_security.multitenancy.enabled: true
+    # You can disable the create of default tenant
+    #opendistro_security.multitenancy.tenants.enable_private: false
+    #opendistro_security.multitenancy.tenants.enable_global: false
+    #Create default tenant
+    opendistro_security.multitenancy.tenants.preferred: [“Private”, “Global”]
+    opendistro_security.readonly_mode.roles: ["kibana_read_only"]
+    elasticsearch.requestHeadersWhitelist: ["securitytenant","Authorization"]
+    # Enable authentification via client certificates 
+    opendistro_security.allow_client_certificates: true
+    #Kibana OICD configuration
+    opendistro_security.auth.type: "openid"
+    opendistro_security.openid.connect_url: "http://<keyclock_url>/auth/realms/<realme_name>/.well-known/openid-configuration" 
+    opendistro_security.openid.client_id: "<realme-id>"
+    opendistro_security.openid.client_secret: "<keyclock-secret>"
+    elasticsearch.requestHeadersWhitelist: ["Authorization", "security_tenant"]
+    opendistro_security.openid.base_redirect_url:  http://<kibana_ingress_url>
+elasticsearch:
+  imagePullPolicy: "IfNotPresent"
+  securityConfig:
+    enabled: true
+    configSecret: "security-config"
+    internalUsersSecret: "internal-users-secret"
+  ssl:
+    transport:
+      existingCertSecret: elasticsearch-transport-certs
+  master:
+    enabled: true
+    replicas: 1
+  data:
+    enabled: true
+    replicas: 1
+  client:
+    enabled: true
+    dedicatedPod:
+      enabled: false
+  config:
+    #NODES_DN, is the name of the subject of the certificate you can get it using the command
+    # openssl x509 -subject -nameopt RFC2253 -noout -in <cert_file>
+    opendistro_security.nodes_dn:
+      - '<ssl_cert_nodes_dn>'
+    processors: ${PROCESSORS:1}
+    opendistro_security.allow_unsafe_democertificates: false
+    opendistro_security.restapi.roles_enabled: ["all_access", "security_rest_api_access"] 
+    opendistro_security.audit.type: internal_elasticsearch
+    opendistro_security.ssl.transport.pemcert_filepath: elk-transport-crt.pem
+    opendistro_security.ssl.transport.pemkey_filepath: elk-transport-key.pem
+    opendistro_security.ssl.transport.pemtrustedcas_filepath: elk-transport-root-ca.pem
+    opendistro_security.ssl.http.enabled: false
+    #Must set to true to enable the create of users and OICD configuration
+    opendistro_security.allow_default_init_securityindex: true
+    opendistro_security.ssl.transport.enforce_hostname_verification: false
+    discovery.zen.minimum_master_nodes: 1
+    cluster.name: <cluster_name>

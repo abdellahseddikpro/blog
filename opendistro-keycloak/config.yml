@@ -1,0 +1,39 @@
+_meta:
+  type: "config"
+  config_version: 2
+config:
+  dynamic:
+    filtered_alias_mode: "warn"
+    disable_rest_auth: false
+    disable_intertransport_auth: false
+    respect_request_indices_options: false
+    license: null
+    kibana:
+      multitenancy_enabled: true
+      server_username: kibanaserver
+    authc:
+      basic_internal_auth_domain:
+        description: "Authenticate via HTTP Basic against internal users database"
+        http_enabled: true
+        transport_enabled: true
+        order: 4
+        http_authenticator:
+          type: basic
+          challenge: true
+        authentication_backend:
+          type: intern
+      openid_auth_domain:
+        http_enabled: true
+        transport_enabled: true
+        order: 1
+        http_authenticator:
+          type: openid
+          challenge: false
+          config:
+            subject_key: preferred_username
+            roles_key: roles
+            openid_connect_url: http://<keyloak_url>/auth/realms/<realme_name>/.well-known/openid-configuration
+            enable_ssl: true
+            verify_hostnames: false
+        authentication_backend:
+          type: noop
